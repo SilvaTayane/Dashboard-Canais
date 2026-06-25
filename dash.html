@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avaliação dos Canais de Comunicação e Telefonia Interna</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; color: #1a2535; }
+
+  header {
+    background: linear-gradient(135deg, #0a2e6e 0%, #1557b0 60%, #1e7dd9 100%);
+    color: white;
+    padding: 24px 30px 20px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  }
+  header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 4px; }
+  header p { font-size: 0.85rem; opacity: 0.85; }
+
+  .kpi-bar {
+    display: flex;
+    gap: 14px;
+    padding: 16px 30px;
+    background: #fff;
+    border-bottom: 1px solid #dde4f0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .kpi {
+    text-align: center;
+    min-width: 100px;
+  }
+  .kpi .num {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #1557b0;
+    line-height: 1;
+  }
+  .kpi .label {
+    font-size: 0.7rem;
+    color: #5a6a80;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .kpi-divider { width: 1px; background: #dde4f0; margin: 2px 0; }
+
+  .section-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #1557b0;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #1557b0;
+    text-align: center;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+    padding: 18px 30px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 16px 16px 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+  }
+  .card.wide { grid-column: span 2; }
+  .card canvas { 
+    flex: 1; 
+    max-height: 160px;
+    min-height: 110px;
+  }
+  .card.wide canvas {
+    max-height: 180px;
+    min-height: 130px;
+  }
+
+  .bar-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+  .bar-item { display: flex; flex-direction: column; gap: 2px; }
+  .bar-item .bar-label { font-size: 0.7rem; color: #3a4a5e; display: flex; justify-content: space-between; }
+  .bar-track { background: #e8f0fb; border-radius: 3px; height: 8px; }
+  .bar-fill { height: 8px; border-radius: 3px; background: linear-gradient(90deg, #1557b0, #1e7dd9); }
+
+  /* ===== ESTILOS DA TABELA DE COMENTÁRIOS ===== */
+  #comentarios {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 18px 30px 40px;
+  }
+  .comentarios-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .comentarios-header h2 {
+    font-size: 1.2rem;
+    color: #0a2e6e;
+  }
+  .comentarios-header .badge {
+    background: #1557b0;
+    color: white;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .table-wrapper {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .table-scroll {
+    overflow-x: auto;
+    padding: 4px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 600px;
+  }
+  thead {
+    background: linear-gradient(135deg, #0a2e6e, #1557b0);
+    color: white;
+  }
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #eef2f7;
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  tr:hover td {
+    background: #f8faff;
+  }
+  td:first-child {
+    font-weight: 600;
+    color: #0a2e6e;
+    white-space: nowrap;
+  }
+  .comentario-texto {
+    color: #2d3a4f;
+  }
+  .tag-categoria {
+    display: inline-block;
+    background: #e8f0fb;
+    color: #1557b0;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ===== BOTÃO FLUTUANTE ===== */
+  .btn-flutuante {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: linear-gradient(135deg, #0a2e6e, #1557b0);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 14px 24px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    box-shadow: 0 6px 20px rgba(21, 87, 176, 0.4);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 999;
+    text-decoration: none;
+  }
+  .btn-flutuante:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(21, 87, 176, 0.5);
+    background: linear-gradient(135deg, #0a2e6e, #1e7dd9);
+  }
+  .btn-flutuante:active {
+    transform: scale(0.95);
+  }
+  .btn-flutuante .icon {
+    font-size: 1.3rem;
+  }
+
+  footer {
+    text-align: center;
+    padding: 14px;
+    color: #8a9ab0;
+    font-size: 0.7rem;
+  }
+
+  @media (max-width: 800px) {
+    .grid { 
+      padding: 12px; 
+      gap: 12px;
+      grid-template-columns: 1fr;
+    }
+    .card.wide { grid-column: span 1; }
+    header { padding: 16px; }
+    header h1 { font-size: 1.2rem; }
+    .kpi-bar { padding: 12px; gap: 10px; }
+    .kpi { min-width: 70px; }
+    .kpi .num { font-size: 1.4rem; }
+    .card canvas { max-height: 140px; min-height: 90px; }
+    .card.wide canvas { max-height: 150px; min-height: 100px; }
+    
+    #comentarios { padding: 12px; }
+    .comentarios-header h2 { font-size: 1rem; }
+    .btn-flutuante {
+      bottom: 16px;
+      right: 16px;
+      padding: 12px 18px;
+      font-size: 0.8rem;
+    }
+    .btn-flutuante .icon { font-size: 1.1rem; }
+    table { font-size: 0.75rem; min-width: 450px; }
+    th, td { padding: 8px 12px; }
+  }
+  
+  @media (max-width: 480px) {
+    .grid { padding: 8px; gap: 10px; }
+    .card { padding: 10px 12px; }
+    .section-title { font-size: 0.55rem; }
+    .kpi .num { font-size: 1.2rem; }
+    .kpi .label { font-size: 0.6rem; }
+    .btn-flutuante {
+      bottom: 12px;
+      right: 12px;
+      padding: 10px 14px;
+      font-size: 0.7rem;
+      gap: 6px;
+    }
+    .btn-flutuante .icon { font-size: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Avaliação dos Canais de Comunicação e Telefonia Interna</h1>
+  <p>Sebrae/MT &nbsp;·&nbsp; Resultados da Pesquisa Interna</p>
+</header>
+
+<div class="kpi-bar">
+  <div class="kpi"><div class="num">73</div><div class="label">Respondentes</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="num">87%</div><div class="label">Usa telefone com frequência</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="num">82%</div><div class="label">Já não conseguiu contato urgente</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="num">71%</div><div class="label">Avalia o Next como Ruim ou Regular</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="num">49%</div><div class="label">Considera alta prioridade</div></div>
+</div>
+
+<div class="grid">
+
+  <!-- 1. Frequência de uso de telefone -->
+  <div class="card">
+    <div class="section-title">Frequência de Contato por Telefone</div>
+    <canvas id="chart_freq"></canvas>
+  </div>
+
+  <!-- 2. Canais utilizados -->
+  <div class="card">
+    <div class="section-title">Canais de Comunicação Utilizados</div>
+    <canvas id="chart_canais"></canvas>
+  </div>
+
+  <!-- 3. Com quem faz contato -->
+  <div class="card">
+    <div class="section-title">Com Quem Realiza os Contatos</div>
+    <canvas id="chart_contato"></canvas>
+  </div>
+
+  <!-- 4. Conseguiu contato rápido -->
+  <div class="card">
+    <div class="section-title">Dificuldade para Contato Rápido</div>
+    <canvas id="chart_nao_conseguiu"></canvas>
+  </div>
+
+  <!-- 5. Avaliação do Next -->
+  <div class="card">
+    <div class="section-title">Avaliação do Funcionamento do Next</div>
+    <canvas id="chart_next"></canvas>
+  </div>
+
+  <!-- 6. Dificuldades com o Next -->
+  <div class="card">
+    <div class="section-title">Principais Dificuldades com o Next</div>
+    <div class="bar-list" id="dific_next"></div>
+  </div>
+
+  <!-- 7. Percepção do atendimento ao cliente -->
+  <div class="card">
+    <div class="section-title">Clientes Atendidos com Facilidade?</div>
+    <canvas id="chart_percep"></canvas>
+  </div>
+
+  <!-- 8. Presenciou dificuldades de clientes -->
+  <div class="card">
+    <div class="section-title">Presenciou Clientes com Dificuldade?</div>
+    <canvas id="chart_presenciou"></canvas>
+  </div>
+
+  <!-- 9. Ampliar telefones ajudaria? -->
+  <div class="card">
+    <div class="section-title">Ampliar Telefones Ajudaria Clientes?</div>
+    <canvas id="chart_ampliar"></canvas>
+  </div>
+
+  <!-- 10. Telefone físico ajudaria comunicação interna -->
+  <div class="card">
+    <div class="section-title">Telefone Físico Melhoraria a Interna?</div>
+    <canvas id="chart_tel_fisico"></canvas>
+  </div>
+
+  <!-- 11. Modelo adequado de telefone -->
+  <div class="card">
+    <div class="section-title">Modelo Mais Adequado de Telefone</div>
+    <canvas id="chart_modelo"></canvas>
+  </div>
+
+  <!-- 12. Situação de uso -->
+  <div class="card">
+    <div class="section-title">Situações em que o Telefone Físico Seria Útil</div>
+    <canvas id="chart_situacao"></canvas>
+  </div>
+
+  <!-- 13. Opção mais adequada -->
+  <div class="card wide">
+    <div class="section-title">Opção Mais Adequada para a Realidade Atual</div>
+    <canvas id="chart_opcao"></canvas>
+  </div>
+
+  <!-- 14. Prioridade -->
+  <div class="card wide">
+    <div class="section-title">Melhorar a Telefonia é Prioridade?</div>
+    <canvas id="chart_prio"></canvas>
+  </div>
+
+  <!-- 15. Respondentes por unidade -->
+  <div class="card wide">
+    <div class="section-title">Respondentes por Unidade</div>
+    <canvas id="chart_unidade"></canvas>
+  </div>
+
+</div>
+
+<!-- ===== SEÇÃO DE COMENTÁRIOS ===== -->
+<section id="comentarios">
+  <div class="comentarios-header">
+    <h2>💬 Comentários e Sugestões dos Respondentes</h2>
+    <span class="badge">25 contribuições</span>
+  </div>
+  <div class="table-wrapper">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Comentário / Sugestão</th>
+            <th>Categoria</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td class="comentario-texto">O Next é muito instável, várias vezes as ligações caem no meio do atendimento.</td><td><span class="tag-categoria">Next</span></td></tr>
+          <tr><td>2</td><td class="comentario-texto">Seria ótimo ter um telefone fixo em cada mesa, facilita muito a comunicação rápida entre setores.</td><td><span class="tag-categoria">Telefone Físico</span></td></tr>
+          <tr><td>3</td><td class="comentario-texto">O WhatsApp acaba sendo o canal mais prático, mas mistura assunto pessoal com profissional.</td><td><span class="tag-categoria">WhatsApp</span></td></tr>
+          <tr><td>4</td><td class="comentario-texto">Muitos colegas desligam o Next e ficam inacessíveis, isso atrasa demais o trabalho.</td><td><span class="tag-categoria">Next</span></td></tr>
+          <tr><td>5</td><td class="comentario-texto">Acho que deveria ter um ramal por setor, assim o cliente não fica perdido tentando achar alguém.</td><td><span class="tag-categoria">Atendimento</span></td></tr>
+          <tr><td>6</td><td class="comentario-texto">O Teams é bom para reuniões, mas para uma ligação rápida é muito burocrático.</td><td><span class="tag-categoria">Teams</span></td></tr>
+          <tr><td>7</td><td class="comentario-texto">Sinto falta de um 0800 funcional, muitos clientes reclamam que não conseguem falar conosco.</td><td><span class="tag-categoria">Atendimento</span></td></tr>
+          <tr><td>8</td><td class="comentario-texto">O Next não tem integração com o celular, isso dificulta quando estou fora da mesa.</td><td><span class="tag-categoria">Next</span></td></tr>
+          <tr><td>9</td><td class="comentario-texto">Telefone físico com ramal é muito mais intuitivo para clientes mais antigos.</td><td><span class="tag-categoria">Telefone Físico</span></td></tr>
+          <tr><td>10</td><td class="comentario-texto">O ideal seria uma combinação: telefone fixo para ligações rápidas e Next para reuniões online.</td><td><span class="tag-categoria">Sugestão</span></td></tr>
+          <tr><td>11</td><td class="comentario-texto">Percebo que muitos clientes desistem de ligar porque a chamada não completa.</td><td><span class="tag-categoria">Atendimento</span></td></tr>
+          <tr><td>12</td><td class="comentario-texto">Falta um treinamento básico de como usar o Next, muitas pessoas não sabem todas as funcionalidades.</td><td><span class="tag-categoria">Treinamento</span></td></tr>
+          <tr><td>13</td><td class="comentario-texto">O WhatsApp é rápido, mas não é oficial e gera insegurança jurídica.</td><td><span class="tag-categoria">WhatsApp</span></td></tr>
+          <tr><td>14</td><td class="comentario-texto">Nas unidades menores, nem sempre tem alguém disponível para atender o telefone.</td><td><span class="tag-categoria">Infraestrutura</span></td></tr>
+          <tr><td>15</td><td class="comentario-texto">Seria útil ter um painel mostrando quem está disponível para atender ligações internas.</td><td><span class="tag-categoria">Sugestão</span></td></tr>
+          <tr><td>16</td><td class="comentario-texto">O Next consome muita bateria do notebook, às vezes desligo para economizar energia.</td><td><span class="tag-categoria">Next</span></td></tr>
+          <tr><td>17</td><td class="comentario-texto">Acho que o investimento deveria ser em melhorar o Next, e não em comprar telefones físicos.</td><td><span class="tag-categoria">Next</span></td></tr>
+          <tr><td>18</td><td class="comentario-texto">Os clientes reclamam que o ramal cai quando transferimos a ligação.</td><td><span class="tag-categoria">Atendimento</span></td></tr>
+          <tr><td>19</td><td class="comentario-texto">O e-mail ainda é o canal mais formal e seguro para documentos e protocolos.</td><td><span class="tag-categoria">E-mail</span></td></tr>
+          <tr><td>20</td><td class="comentario-texto">Gostaria de ter um número único para a unidade, e não o número pessoal de cada colaborador.</td><td><span class="tag-categoria">Sugestão</span></td></tr>
+          <tr><td>21</td><td class="comentario-texto">O Teams poderia ser a solução única, mas precisa de melhorias no áudio.</td><td><span class="tag-categoria">Teams</span></td></tr>
+          <tr><td>22</td><td class="comentario-texto">Muitas vezes perco ligações importantes porque o Next não toca no celular.</td><td><span class="tag-categoria">Next</span></td></tr>
+          <tr><td>23</td><td class="comentario-texto">O telefone fixo seria essencial para atendimento ao público externo, mais profissional.</td><td><span class="tag-categoria">Telefone Físico</span></td></tr>
+          <tr><td>24</td><td class="comentario-texto">Precisamos de um canal mais rápido para comunicação interna urgente, o WhatsApp ainda é o melhor.</td><td><span class="tag-categoria">WhatsApp</span></td></tr>
+          <tr><td>25</td><td class="comentario-texto">O ideal seria manter o Next para home office e ter telefone físico no escritório.</td><td><span class="tag-categoria">Sugestão</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer>Pesquisa interna Sebrae/MT &nbsp;·&nbsp; 73 respondentes &nbsp;·&nbsp; Março/Abril 2026</footer>
+
+<!-- ===== BOTÃO FLUTUANTE ===== -->
+<button class="btn-flutuante" onclick="document.getElementById('comentarios').scrollIntoView({ behavior: 'smooth', block: 'start' })">
+  <span class="icon">💬</span>
+  Ver comentários
+</button>
+
+<script>
+const BLUE_PALETTE = [
+  '#0a2e6e','#1557b0','#1e7dd9','#3399ff','#66b2ff',
+  '#99ccff','#cce5ff','#2e86ab','#0c5c8a','#1a4f6e'
+];
+const BLUE_GRADIENT = [
+  '#0a2e6e','#1557b0','#1e7dd9','#3399ff','#66b2ff','#99ccff','#cce5ff','#b3d7f5'
+];
+
+function barChart(id, labels, data, options = {}) {
+  const ctx = document.getElementById(id).getContext('2d');
+  return new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: BLUE_PALETTE.slice(0, data.length),
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: options.horizontal ? 'y' : 'x',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.raw} respondentes (${Math.round(ctx.raw/73*100)}%)`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: options.horizontal }, ticks: { font: { size: 9 } } },
+        y: { grid: { display: !options.horizontal }, ticks: { font: { size: 9 } } }
+      }
+    }
+  });
+}
+
+function doughnutChart(id, labels, data) {
+  const ctx = document.getElementById(id).getContext('2d');
+  return new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: BLUE_GRADIENT.slice(0, data.length),
+        borderWidth: 1.5,
+        borderColor: '#fff',
+        hoverOffset: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'right',
+          labels: { font: { size: 9 }, padding: 6, boxWidth: 12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.raw} (${Math.round(ctx.raw/73*100)}%)`
+          }
+        }
+      }
+    }
+  });
+}
+
+function polarChart(id, labels, data) {
+  const ctx = document.getElementById(id).getContext('2d');
+  return new Chart(ctx, {
+    type: 'polarArea',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: BLUE_GRADIENT.slice(0, data.length).map(c => c + 'cc'),
+        borderColor: BLUE_GRADIENT.slice(0, data.length),
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { font: { size: 9 }, padding: 6, boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.raw} (${Math.round(ctx.raw/73*100)}%)`
+          }
+        }
+      }
+    }
+  });
+}
+
+// 1. Frequência
+barChart('chart_freq',
+  ['Várias vezes/dia','Algumas/semana','Raramente','Nunca'],
+  [46, 18, 7, 2]
+);
+
+// 2. Canais
+barChart('chart_canais',
+  ['WhatsApp Pessoal','Teams','Ligação','E-mail','Next','Antigas linhas'],
+  [49, 36, 9, 22, 5, 1],
+  { horizontal: true }
+);
+
+// 3. Com quem contata
+doughnutChart('chart_contato',
+  ['Todos','Colaboradores UFs','Fornecedores','Clientes'],
+  [41, 12, 6, 5]
+);
+
+// 4. Dificuldade de contato rápido
+barChart('chart_nao_conseguiu',
+  ['Algumas vezes','Frequentemente','Raramente','Nunca'],
+  [35, 25, 12, 1]
+);
+
+// 5. Avaliação Next
+const ctxNext = document.getElementById('chart_next').getContext('2d');
+new Chart(ctxNext, {
+  type: 'bar',
+  data: {
+    labels: ['Muito bom','Bom','Regular','Ruim','Muito ruim'],
+    datasets: [{
+      data: [6, 7, 24, 18, 18],
+      backgroundColor: ['#0a4e8c','#1557b0','#e6a817','#c0392b','#7b241c'],
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.raw} respondentes` } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+      y: { grid: { display: true }, ticks: { font: { size: 9 } } }
+    }
+  }
+});
+
+// 6. Dificuldades Next
+const dificData = [
+  { label: 'Colegas desligam o Next', val: 21 },
+  { label: 'Ligações não completam', val: 14 },
+  { label: 'Não sabe utilizar', val: 10 },
+  { label: 'Não recebe ligações', val: 9 },
+  { label: 'Nenhuma dificuldade', val: 8 },
+  { label: 'Qualidade ruim do áudio', val: 6 },
+  { label: 'Interface difícil de usar', val: 3 },
+  { label: 'Dificuldade de acesso', val: 2 },
+];
+const max = 21;
+const container = document.getElementById('dific_next');
+dificData.forEach(d => {
+  const pct = Math.round(d.val / 73 * 100);
+  container.innerHTML += `
+  <div class="bar-item">
+    <div class="bar-label"><span>${d.label}</span><span><b>${d.val}</b> (${pct}%)</span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${Math.round(d.val/max*100)}%"></div></div>
+  </div>`;
+});
+
+// 7. Percepção cliente
+doughnutChart('chart_percep',
+  ['Freq. não conseguem','Não sei informar','Às vezes têm dificuldade','Sim, na maioria'],
+  [23, 20, 18, 12]
+);
+
+// 8. Presenciou clientes com dificuldade
+barChart('chart_presenciou',
+  ['Algumas vezes','Nunca','Frequentemente','Raramente'],
+  [44, 14, 8, 7]
+);
+
+// 9. Ampliar telefones ajudaria clientes
+polarChart('chart_ampliar',
+  ['Ajudaria um pouco','Ajudaria muito','Não faria diferença','Não sei opinar'],
+  [19, 19, 18, 17]
+);
+
+// 10. Telefone físico interno
+const ctxTf = document.getElementById('chart_tel_fisico').getContext('2d');
+new Chart(ctxTf, {
+  type: 'bar',
+  data: {
+    labels: ['Sim, muito','Sim, um pouco','Não faria diferença','Não ajudaria'],
+    datasets: [{
+      data: [28, 24, 16, 5],
+      backgroundColor: ['#0a2e6e','#1557b0','#e6a817','#c0392b'],
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.raw} respondentes (${Math.round(ctx.raw/73*100)}%)` } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+      y: { ticks: { font: { size: 9 } } }
+    }
+  }
+});
+
+// 11. Modelo de telefone
+barChart('chart_modelo',
+  ['Por colaborador','Por gerência','Não vejo necessidade','Só p/ atendimento','Pontos estratégicos'],
+  [21, 18, 13, 12, 9],
+  { horizontal: true }
+);
+
+// 12. Situação de uso
+doughnutChart('chart_situacao',
+  ['Atendimento ao cliente','Comunicação rápida','Não vejo necessidade','Contato com parceiros','Ligações 0800'],
+  [35, 23, 7, 6, 2]
+);
+
+// 13. Opção mais adequada
+const ctxOp = document.getElementById('chart_opcao').getContext('2d');
+new Chart(ctxOp, {
+  type: 'bar',
+  data: {
+    labels: [
+      'Combinação físico + digital',
+      'Melhorar o Next',
+      'Voltar ao físico'
+    ],
+    datasets: [{
+      data: [31, 22, 20],
+      backgroundColor: ['#1557b0','#1e7dd9','#3399ff'],
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.raw} (${Math.round(ctx.raw/73*100)}%)` } }
+    },
+    scales: {
+      x: { max: 40, ticks: { font: { size: 10 } } },
+      y: { ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+// 14. Prioridade
+const ctxPrio = document.getElementById('chart_prio').getContext('2d');
+new Chart(ctxPrio, {
+  type: 'bar',
+  data: {
+    labels: ['Alta prioridade','Média prioridade','Baixa prioridade','Não é prioridade'],
+    datasets: [{
+      data: [36, 16, 17, 4],
+      backgroundColor: ['#0a2e6e','#1e7dd9','#66b2ff','#cce5ff'],
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.raw} (${Math.round(ctx.raw/73*100)}%)` } }
+    },
+    scales: {
+      x: { max: 45, ticks: { font: { size: 10 } } },
+      y: { ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+// 15. Unidades
+const unidadeLabels = [
+  'GFIN','SOP','RME','LDE','GDSH','RIS','CES','GGE','GCSS','ATA','SSO',
+  'GMER','DAF','GJUR','GCM','GAIN','GDT','GIE','CSA','GIN','GTI','GEI','GRE',
+  'SDAF','BAS','GCEP','TRA','GTE','DSUP','GCP'
+];
+const unidadeVals = [6,5,5,4,4,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1];
+const ctxU = document.getElementById('chart_unidade').getContext('2d');
+new Chart(ctxU, {
+  type: 'bar',
+  data: {
+    labels: unidadeLabels,
+    datasets: [{
+      data: unidadeVals,
+      backgroundColor: unidadeVals.map(v => v >= 5 ? '#0a2e6e' : v >= 3 ? '#1557b0' : '#3399ff'),
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.raw} respondentes` } }
+    },
+    scales: {
+      x: { ticks: { font: { size: 8 }, maxRotation: 45 } },
+      y: { ticks: { stepSize: 1, font: { size: 9 } }, max: 8 }
+    }
+  }
+});
+</script>
+</body>
+</html>
